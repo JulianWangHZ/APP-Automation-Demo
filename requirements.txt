@@ -1,0 +1,10 @@
+Appium-Python-Client
+pytest
+selenium
+python-dotenv
+pytest-bdd
+pytest-order
+allure-pytest
+pytest-rerunfailures 
+requests
+pytest-xdist
