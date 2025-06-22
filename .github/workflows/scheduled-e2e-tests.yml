@@ -1,8 +1,9 @@
 name: BrowserStack - Scheduled iOS/padOS E2E Tests
 
 on:
-  #schedule:
-  #  - cron: "0 18 * * *" # UTC 18:00 (Taiwan time 02:00)
+  schedule:
+    - cron: "0 0 1 1 *" # （Actually not triggered, just to avoid errors）
+  # - cron: "0 18 * * *" # UTC 18:00 (Taiwan time 02:00)
 
 env:
   PYTHON_VERSION: "3.9"
