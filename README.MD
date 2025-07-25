@@ -1,8 +1,6 @@
 <div align="center">
 
-# 🚀 Swift Appium Testing Framework
-
-A powerful automated testing framework for Swift applications, supporting iOS platform.
+# 🚀 iOS APP Testing Framework
 
 [![Platform](https://img.shields.io/badge/Platform-iOS-blue)]()
 [![Appium](https://img.shields.io/badge/Appium-2.0-purple)]()
@@ -29,12 +27,52 @@ This framework provides comprehensive automated testing for Swift applications w
 - **Real Device Testing**: BrowserStack integration for real device testing
 - **Element Inspection**: Multiple tools for element location and inspection
 
+## 💰 About Dime App
+
+This automation framework is specifically designed to test the **[Dime](https://github.com/rarfell/dimeApp)** application - a beautiful, open-source personal finance tracker built with iOS design guidelines in mind.
+
+<p align="center">
+  <img src="./images/assets/hero.png" width="451" style="max-width: 100%; height: auto;" />
+</p>
+
+**Dime** is a 100% free, open-source personal finance tracker built with iOS design guidelines in mind. [Download Dime on the App Store.](https://apps.apple.com/sg/app/dime-budget-expense-tracker/id1635280255)
+
+## App Preview
+
+<p align="center">
+  <img src="./images/assets/3.png" height="300" /> 
+  <img src="./images/assets/4.png" height="300" /> 
+  <img src="./images/assets/5.png" height="300" />
+  <img src="./images/assets/6.png" height="300" />
+</p>
+<p align="center">
+  <img src="./images/assets/7.png" height="300" />
+  <img src="./images/assets/8.png" height="300" />
+  <img src="./images/assets/9.png" height="300" />
+</p>
+
+### Why Dime?
+
+- 🆓 **100% free forever** - No paywall or ads
+- 🎨 **Beautiful iOS-centric design** - Simplicity at its core
+- 📊 **Insightful expenditure breakdowns** - Various time periods
+- 💰 **Budget creation** - Based on expense categories
+- 🔄 **Recurring expenses** - Custom time frames
+- ☁️ **iCloud sync** - Sync across devices
+- 🔒 **Biometric authentication** - Protect your data
+- 🌙 **Dark mode support** - Gorgeous night theme
+
+Our test automation framework covers all these features to ensure the highest quality user experience.
+
 # 📋 Table of Contents
 
 - [🚀 Swift Appium Testing Framework](#-swift-appium-testing-framework)
   - [📊 Project Overview](#-project-overview)
     - [🧪 Latest Test Reports](#-latest-test-reports)
     - [🚀 Key Features](#-key-features)
+  - [💰 About Dime App](#-about-dime-app)
+  - [App Preview](#app-preview)
+    - [Why Dime?](#why-dime)
 - [📋 Table of Contents](#-table-of-contents)
     - [Required Software](#required-software)
     - [Package Installation](#package-installation)
