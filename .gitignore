@@ -185,3 +185,7 @@ browserstack_session_id.txt
 
 # cursor rules
 .cursor
+
+
+# .vscode
+.vscode
