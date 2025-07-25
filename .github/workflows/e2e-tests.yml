@@ -1,20 +1,36 @@
-name: BrowserStack - iOS/padOS E2E Manual Trigger Tests
+name: BrowserStack - iOS E2E Manual Trigger Tests
 
 on:
   workflow_dispatch:
     inputs:
       tags:
-        description: "Test tags (e.g. regression, login)"
+        description: "Test tags (e.g. regression, onboarding)"
         required: false
         default: ""
       platform:
-        description: "Test platform (ios/padOS)"
+        description: "Test platform"
         required: true
         default: "ios"
         type: choice
         options:
           - ios
-          - padOS
+      device_name:
+        description: "Device name"
+        required: true
+        default: "iPhone 15 Pro"
+        type: choice
+        options:
+          - iPhone 15 Pro
+          - iPhone 16 Pro
+          - iPhone 17 Pro
+      os_version:
+        description: "OS Version"
+        required: true
+        default: "17.5"
+        type: choice
+        options:
+          - "17.5"
+          - "18.0"
 
 env:
   PYTHON_VERSION: "3.9"
@@ -55,19 +71,17 @@ jobs:
           BROWSERSTACK_USERNAME=${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY=${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           BROWSERSTACK_IOS_APP_ID=${{ secrets.BROWSERSTACK_IOS_APP_ID }}
-          BROWSERSTACK_DEVICE_NAME=${{ github.event.inputs.platform == 'padOS' && 'iPad Pro (12.9-inch) (6th generation)' || 'iPhone 15 Pro' }}
-          BROWSERSTACK_OS_VERSION=${{ github.event.inputs.platform == 'padOS' && '17.5' || '17.5' }}
+          BROWSERSTACK_DEVICE_NAME=${{ github.event.inputs.device_name }}
+          BROWSERSTACK_OS_VERSION=${{ github.event.inputs.os_version }}
           BROWSERSTACK_PROJECT_NAME=App E2E Tests
           BROWSERSTACK_BUILD_NAME=GitHub Actions Build
           BROWSERSTACK_SESSION_NAME=E2E Test Session
           BROWSERSTACK_HUB_URL=https://hub-cloud.browserstack.com/wd/hub
           DEVICE_COUNT=1
-          FULL_RESET=True
+          NO_RESET=False
           AUTO_ACCEPT_ALERTS=True
           IMPLICIT_WAIT=25
-          TEST_EMAIL= "qatest@hunger.ai"
-          VERIFICATION_CODE= "555666"
-          PLATFORM_NAME=${{ github.event.inputs.platform == 'padOS' && 'padOS' || 'iOS' }}
+          PLATFORM_NAME=${{ github.event.inputs.platform | upper }}
           AUTOMATION_NAME=XCUITest
           EOF
 
@@ -83,15 +97,10 @@ jobs:
           # run tests
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tags }}" ]; then
             echo "Running manual trigger with tag: ${{ github.event.inputs.tags }}"
-            python -m pytest -v -k "${{ github.event.inputs.tags }}" --alluredir=allure-results
+            python -m pytest -v -s -k "${{ github.event.inputs.tags }}" --alluredir=allure-results
           else
-            if [ "${{ github.event.inputs.platform }}" = "padOS" ]; then
-              echo "Running padOS tests"
-              python -m pytest -v tests/steps/padOS/ --alluredir=allure-results
-            else
-              echo "Running iOS tests"
-              python -m pytest -v tests/steps/ios/ --alluredir=allure-results
-            fi
+            echo "Running iOS tests"
+            python -m pytest -v -s tests/steps/ios/ --alluredir=allure-results
           fi
 
       - name: Copy test results to reports directory
@@ -254,7 +263,7 @@ jobs:
         run: |
           echo "=== ${{ github.event.inputs.platform | upper }} E2E Test Results Summary ==="
           echo "Platform: ${{ github.event.inputs.platform | upper }}"
-          echo "Device: ${{ github.event.inputs.platform == 'padOS' && 'iPad Pro (12.9-inch) (6th generation)' || 'iPhone 15 Pro' }}"
+          echo "Device: ${{ github.event.inputs.device_name }}"
           echo "OS Version: 17.5"
           echo "Device Count: 1"
           echo "Test Tags: ${{ github.event.inputs.tags || 'All Tests' }}"
@@ -315,7 +324,7 @@ jobs:
         run: |
           echo "🚨 TEST FAILURE - ${{ github.event.inputs.platform | upper }}"
           echo "Platform: ${{ github.event.inputs.platform | upper }}"
-          echo "Device: ${{ github.event.inputs.platform == 'padOS' && 'iPad Pro (12.9-inch) (6th generation)' || 'iPhone 15 Pro' }}"
+          echo "Device: ${{ github.event.inputs.device_name }}"
           echo "Build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           echo "Triggered by: ${{ github.actor }}"
 
@@ -329,3 +338,4 @@ jobs:
 permissions:
   id-token: write
   contents: read
+

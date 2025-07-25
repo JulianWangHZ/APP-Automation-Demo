@@ -20,11 +20,10 @@ This framework provides comprehensive automated testing for Swift applications w
 ### 🧪 Latest Test Reports
 
 - **[iOS E2E Test Reports](https://ios-e2e-automation-demo.netlify.app)** - View latest iOS automated test results
-- **[padOS E2E Test Reports](https://pados-e2e-automation-demo.netlify.app)** - View latest padOS automated test results
 
 ### 🚀 Key Features
 
-- **Cross-Platform Support**: iOS and padOS testing capabilities
+- **iOS Platform Support**: Comprehensive iOS testing capabilities
 - **Automated CI/CD**: GitHub Actions integration with scheduled and manual triggers
 - **Comprehensive Reporting**: Allure reports with detailed test insights
 - **Real Device Testing**: BrowserStack integration for real device testing
@@ -37,10 +36,10 @@ This framework provides comprehensive automated testing for Swift applications w
     - [🧪 Latest Test Reports](#-latest-test-reports)
     - [🚀 Key Features](#-key-features)
 - [📋 Table of Contents](#-table-of-contents)
-  - [Required Software](#required-software)
-  - [Package Installation](#package-installation)
-  - [Appium Setup](#appium-setup)
-  - [WebDriverAgent Setup (iOS Only)](#3-webdriveragent-setup-ios-only)
+    - [Required Software](#required-software)
+    - [Package Installation](#package-installation)
+    - [Appium Setup](#appium-setup)
+    - [WebDriverAgent Setup (iOS Only)](#webdriveragent-setup-ios-only)
   - [Running Tests](#running-tests)
     - [Start Appium Server](#start-appium-server)
     - [Basic Test Execution](#basic-test-execution)
@@ -113,10 +112,8 @@ pip install -r requirements.txt
 # .env
 APPIUM_OS="ios"
 IMPLICIT_WAIT=15
-FULL_RESET="True"
+NO_RESET="True"
 AUTO_ACCEPT_ALERTS="True"
-TEST_EMAIL= "qatest@gmail.com"
-VERIFICATION_CODE= "123456"
 IOS_APP_PATH="/path/to/your/Beta.app"
 #UDID="4BEC1422-4429-4EAD-B850-C296B013A210" #Optional
 ```
@@ -179,7 +176,7 @@ pytest -k "regression"
 pytest -k "login_invalid_email"
 
 # Run specific test file
-pytest tests/steps/ios/test_01_ios_onboarding_steps.py
+pytest tests/steps/ios/test_01_ios_onboarding_steps.py -v -s
 ```
 
 ### Report Generation Commands
@@ -221,7 +218,6 @@ allure serve allure-results
 View the latest automated test results from our CI/CD pipeline:
 
 - **[iOS E2E Test Reports](https://ios-e2e-automation-demo.netlify.app)** - Latest iOS test results with detailed insights
-- **[padOS E2E Test Reports](https://pados-e2e-automation-demo.netlify.app)** - Latest padOS test results with detailed insights
 
 These reports are automatically generated and deployed after each test run, providing:
 
@@ -337,6 +333,9 @@ python3 -m uiautodev
 ```bash
 # iOS Simulator
 xcrun simctl list devices
+
+# iOS Real Device
+xcrun xctrace list devices
 ```
 
 <h1 id="references">📚 References</h1>

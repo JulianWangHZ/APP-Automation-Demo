@@ -19,11 +19,10 @@
 ### 🧪 最新測試報告
 
 - **[iOS E2E 測試報告](https://ios-e2e-automation-demo.netlify.app)** - 查看最新 iOS 自動化測試結果
-- **[padOS E2E 測試報告](https://pados-e2e-automation-demo.netlify.app)** - 查看最新 padOS 自動化測試結果
 
 ### 🚀 主要功能
 
-- **跨平台支援**: iOS 和 padOS 測試能力
+- **iOS 平台支援**: 全面的 iOS 測試能力
 - **自動化 CI/CD**: GitHub Actions 整合，支援排程和手動觸發
 - **完整報告**: Allure 報告，提供詳細測試洞察
 - **實體裝置測試**: BrowserStack 整合，支援實體裝置測試
@@ -36,10 +35,10 @@
     - [🧪 最新測試報告](#-最新測試報告)
     - [🚀 主要功能](#-主要功能)
 - [📋 目錄](#-目錄)
-  - [必要軟體](#必要軟體)
-  - [套件安裝](#套件安裝)
-  - [Appium 設定](#appium-設定)
-  - [WebDriverAgent 設定 (僅 iOS)](#3-webdriveragent-設定-僅-ios)
+    - [必要軟體](#必要軟體)
+    - [套件安裝](#套件安裝)
+    - [Appium 設定](#appium-設定)
+    - [WebDriverAgent 設定 (僅 iOS)](#webdriveragent-設定-僅-ios)
   - [執行測試](#執行測試)
     - [啟動 Appium 伺服器](#啟動-appium-伺服器)
     - [基本測試執行](#基本測試執行)
@@ -112,11 +111,10 @@ pip install -r requirements.txt
 # .env
 APPIUM_OS="ios"
 IMPLICIT_WAIT=15
-FULL_RESET="True"
+NO_RESET="True"
 AUTO_ACCEPT_ALERTS="True"
-TEST_EMAIL= "qatest@gmail.com"
-VERIFICATION_CODE= "123456"
-IOS_APP_PATH="/path/to/your/Beta.app"
+IOS_APP_BUNDLE_ID=com.rafaelsoh.dime
+IOS_APP_PATH="/path/to/your/Dime.app"
 #UDID="4BEC1422-4429-4EAD-B850-C296B013A210" #可選
 ```
 
@@ -220,7 +218,6 @@ allure serve allure-results
 查看我們 CI/CD 管道的最新自動化測試結果：
 
 - **[iOS E2E 測試報告](https://ios-e2e-automation-demo.netlify.app)** - 最新 iOS 測試結果，包含詳細洞察
-- **[padOS E2E 測試報告](https://pados-e2e-automation-demo.netlify.app)** - 最新 padOS 測試結果，包含詳細洞察
 
 這些報告在每次測試執行後自動生成並部署，提供：
 
