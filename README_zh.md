@@ -1,8 +1,6 @@
 <div align="center">
 
-# 🚀 Swift Appium 測試框架
-
-一個強大的 Swift 應用程式自動化測試框架，支援 iOS 平台。
+# 🚀 iOS APP 測試框架
 
 [![Platform](https://img.shields.io/badge/Platform-iOS-blue)]()
 [![Appium](https://img.shields.io/badge/Appium-2.0-purple)]()
@@ -28,12 +26,52 @@
 - **實體裝置測試**: BrowserStack 整合，支援實體裝置測試
 - **元素檢查**: 多種元素定位和檢查工具
 
+## 💰 關於 Dime 應用程式
+
+本自動化測試框架專門為測試 **[Dime](https://github.com/rarfell/dimeApp)** 應用程式而設計 - 一個美觀的開源個人財務追蹤應用程式，遵循 iOS 設計準則。
+
+<p align="center">
+  <img src="./images/assets/hero.png" width="451" style="max-width: 100%; height: auto;" />
+</p>
+
+**Dime** 是一款 100% 免費的開源個人財務追蹤應用程式，以 iOS 設計準則為核心。[在 App Store 下載 Dime。](https://apps.apple.com/sg/app/dime-budget-expense-tracker/id1635280255)
+
+## 應用程式預覽
+
+<p align="center">
+  <img src="./images/assets/3.png" height="300" /> 
+  <img src="./images/assets/4.png" height="300" /> 
+  <img src="./images/assets/5.png" height="300" />
+  <img src="./images/assets/6.png" height="300" />
+</p>
+<p align="center">
+  <img src="./images/assets/7.png" height="300" />
+  <img src="./images/assets/8.png" height="300" />
+  <img src="./images/assets/9.png" height="300" />
+</p>
+
+### 為什麼選擇 Dime？
+
+- 🆓 **永久免費** - 無付費牆或廣告
+- 🎨 **優美的 iOS 設計** - 簡潔為核心
+- 📊 **深度支出分析** - 多種時間週期
+- 💰 **預算管理** - 基於支出類別
+- 🔄 **定期支出** - 自訂時間週期
+- ☁️ **iCloud 同步** - 跨裝置同步
+- 🔒 **生物識別驗證** - 保護您的資料
+- 🌙 **深色模式支援** - 精美的夜間主題
+
+我們的測試自動化框架涵蓋所有這些功能，確保最高品質的使用者體驗。
+
 # 📋 目錄
 
 - [🚀 Swift Appium 測試框架](#-swift-appium-測試框架)
   - [📊 專案概覽](#-專案概覽)
     - [🧪 最新測試報告](#-最新測試報告)
     - [🚀 主要功能](#-主要功能)
+  - [💰 關於 Dime 應用程式](#-關於-dime-應用程式)
+  - [應用程式預覽](#應用程式預覽)
+    - [為什麼選擇 Dime？](#為什麼選擇-dime)
 - [📋 目錄](#-目錄)
     - [必要軟體](#必要軟體)
     - [套件安裝](#套件安裝)
