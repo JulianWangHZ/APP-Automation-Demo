@@ -20,6 +20,7 @@ from utils.permission_handler import handle_permission_dialogs
 from screenshot_hooks import pytest_runtest_makereport
 
 
+test_summary = []
 
 def pytest_addoption(parser):
     """Add custom command line options"""
@@ -29,6 +30,64 @@ def pytest_addoption(parser):
         default=False,
         help="Skip app reinstallation and setup process"
     )
+    
+def handle_failed_test_reset(item, driver):
+    """handle the failed test case to reset the app status"""
+    print("test failed, starting to reset app status...")
+    try:
+        if driver:
+            is_ci = os.getenv('IS_CI', 'false').lower() == 'true'
+
+            if is_ci:
+                try:
+                    app_id = get_app_id()
+                    
+                    print(f"Terminate iOS app: {app_id}")
+                    driver.terminate_app(app_id)
+                    print("iOS app terminated successfully")
+                    
+                    print(f"Restart iOS app: {app_id}")
+                    driver.activate_app(app_id)
+                    print("iOS app restarted successfully")
+                    
+                except Exception as webdriver_error:
+                    print(f"BrowserStack app reset failed: {webdriver_error}")
+                    print("Cannot reset app in BrowserStack environment, continuing with next test")
+            
+            else:
+                # Local environment 
+                app_id = get_app_id()
+                app_path = os.getenv('IOS_APP_PATH')
+                
+                if app_path:
+                    print(f"Uninstall iOS app: {app_id}")
+                    run(['xcrun', 'simctl', 'uninstall', 'booted', app_id], check=True)
+                    print("iOS app uninstalled successfully")
+                    
+                    print(f"Reinstall iOS app: {app_path}")
+                    run(['xcrun', 'simctl', 'install', 'booted', app_path], check=True)
+                    print("iOS app reinstalled successfully")
+                    
+                    # Re-execute setup_flow for onboarding
+                    try:
+                        setup_flow()
+                        print("Re-login successfully")
+                    except Exception as setup_error:
+                        print(f"Re-login failed: {setup_error}")
+                else:
+                    print("IOS_APP_PATH environment variable is not set, cannot reinstall")
+            
+            print("iOS app reset completed")
+        else:
+            print("No driver found, cannot reset app status")
+    except Exception:
+        print(traceback.format_exc())
+
+
+def get_app_id():
+    """Get the app bundle ID from environment variables"""
+    return os.getenv('IOS_APP_BUNDLE_ID', 'com.rafaelsoh.dime')
+
 
 @pytest.fixture(scope="session", autouse=True)
 def driver(request):
@@ -37,25 +96,25 @@ def driver(request):
 
     # Get environment variables
     platform = os.getenv('APPIUM_OS').lower()
-    email = os.getenv('TEST_EMAIL')
-    ver_code = os.getenv('VERIFICATION_CODE')
     print(f"Current platform: {platform}")
 
     # Check if the skipsetup option is enabled
     skip_setup = request.config.getoption("--skipsetup")
-    
+
     # Check if the previous test failed
     previous_test_failed = False
     if hasattr(request.session, 'previous_test_failed'):
         previous_test_failed = request.session.previous_test_failed
-    
+
     # --- App cleanup process ---
     if not skip_setup:  # Only reinstall if skipsetup is not enabled
         try:
             print("Cleaning iOS application...")
             app_path = os.getenv('IOS_APP_PATH')
+            app_id = get_app_id()
+            
             if app_path:
-                run(['xcrun', 'simctl', 'uninstall', 'booted', 'com.hunger.hotcakeapp.staging'], check=True)
+                run(['xcrun', 'simctl', 'uninstall', 'booted', app_id], check=True)
                 run(['xcrun', 'simctl', 'install', 'booted', app_path], check=True)
             else:
                 print("Please set IOS_APP_PATH in your .env")
@@ -68,23 +127,23 @@ def driver(request):
     appium_setup = AppiumSetup()
     driver = appium_setup.setUp()
 
-    # Check if there are tests with the 'login' marker in the current test collection
-    has_login_tag = False
+    # Check if there are tests with the 'onboarding' marker in the current test collection
+    has_onboarding_tag = False
     for item in request.session.items:
-        if item.get_closest_marker('login'):
-            has_login_tag = True
+        if item.get_closest_marker('onboarding'):
+            has_onboarding_tag = True
             break
 
-    # --- Onboarding + login process ---
-    if has_login_tag or skip_setup:
-        print("Found tests with login marker or skipsetup flag, skipping onboarding and login process")
+    # --- Onboarding process ---
+    if has_onboarding_tag or skip_setup:
+        print("Found tests with onboarding marker or skipsetup flag, skipping onboarding process")
     else:
-        print("Executing onboarding and login process...")
+        print("Executing onboarding process...")
         try:
-            setup_flow(driver, email, ver_code)
+            setup_flow()
             print("Initialization process completed")
         except Exception as e:
-            print(f"Onboarding/Login process failed: {e}")
+            print(f"Onboarding process failed: {e}")
 
     yield driver
 
@@ -94,16 +153,10 @@ def driver(request):
 
 def pytest_configure(config):
     """Configure test collection and markers"""
-    config.addinivalue_line("markers", "onboarding: Mark test as onboarding")
-    config.addinivalue_line("markers", "login: login related tests run on port 4723")
-    
+
     if not config.args:
-        platform = os.getenv('APPIUM_OS').lower()
-        logger.info(f"Configuring test collection for platform: {platform}")
-        if platform == 'pados':
-            config.args = ['tests/steps/padOS']
-        else:
-            config.args = ['tests/steps/ios']
+        logger.info("Configuring test collection for iOS platform")
+        config.args = ['tests/steps/ios']
 
 
 def pytest_bdd_apply_tag(tag, function):
@@ -113,23 +166,21 @@ def pytest_bdd_apply_tag(tag, function):
         return True
     return None
 
+
 def pytest_collection_modifyitems(items):
-    """Filter tests for the selected platform"""
-    platform = os.getenv('APPIUM_OS').lower()
-    logger.info(f"Running tests for platform: {platform}")
-    
+    """Filter tests for iOS platform"""
+    logger.info("Running tests for iOS platform")
+
     filtered_items = []
     for item in items:
         file_path = str(item.fspath)
-        if platform == 'pados' and '/padOS/' in file_path:
+        if '/ios/' in file_path:
             filtered_items.append(item)
-        elif platform == 'ios' and '/ios/' in file_path:
-            filtered_items.append(item)
-    
+
     items[:] = filtered_items
     logger.info(f"Filtered test count: {len(filtered_items)}")
 
-        
+
 @pytest.fixture
 def base_actions(driver):
     return BaseActions(driver)
@@ -139,82 +190,37 @@ def base_actions(driver):
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
-    
-    # Record test results
-    if report.when == "call":  # Only record when the test is executed
-        # Set the flag for whether the next test needs to be reinstalled
+
+    # record test result
+    if report.when == "call":  # only record test result when test is running
+        # set the flag for the next test to reinstall the app
         if hasattr(item.session, 'previous_test_failed'):
             item.session.previous_test_failed = report.failed
         else:
             setattr(item.session, 'previous_test_failed', report.failed)
-        
+
         if report.failed:
-            # In BrowserStack environment, we can only reset the app state
-            print(f"Test failed, starting to reset app state...")
-            try:
-                driver = None
-                for fixture_name in item.fixturenames:
-                    if fixture_name == 'driver':
-                        driver = item.funcargs.get('driver')
-                        break
-                
-                if driver:
-                    is_ci = os.getenv('IS_CI', 'false').lower() == 'true'
-                    platform = os.getenv('APPIUM_OS').lower()
-                    
-                    if is_ci:
-                        try:
-                            app_id = 'com.hunger.hotcakeapp.staging'
-                            
-                            print(f"Clearing app data: {app_id}")
-                            driver.execute_script('mobile: clearApp', {'appId': app_id})
-                            print("App data cleared successfully")
-                            
-                            print(f"Restarting app: {app_id}")
-                            driver.activate_app(app_id)
-                            print("App restarted successfully")
-                                
-                        except Exception as webdriver_error:
-                            print(f"BrowserStack app reset failed: {webdriver_error}")
-                            print("Cannot reset app in BrowserStack environment, continuing to next test")
-                    
-                    else:
-                        app_id = 'com.hunger.hotcakeapp.staging'
-                        app_path = os.getenv('IOS_APP_PATH')
-                        
-                        if app_path:
-                            print(f"Uninstalling iOS app: {app_id}")
-                            run(['xcrun', 'simctl', 'uninstall', 'booted', app_id], check=True)
-                            print(f"Reinstalling iOS app: {app_path}")
-                            run(['xcrun', 'simctl', 'install', 'booted', app_path], check=True)
-                            print("iOS app reinstalled successfully")
-                        else:
-                            print("IOS_APP_PATH environment variable not set, cannot reinstall")
-                    
-                    # Re-execute setup_flow
-                    email = os.getenv('TEST_EMAIL')
-                    ver_code = os.getenv('VERIFICATION_CODE')
-                    
-                    if email and ver_code:
-                        print(f"Starting to re-login, using email: {email}, ver_code: {ver_code}")
-                        try:
-                            setup_flow(driver, email, ver_code)
-                            print("Re-login successful")
-                        except Exception as setup_error:
-                            print(f"Re-login failed: {setup_error}")
-                else:
-                    print("Driver not found, cannot reset app state")
-            except Exception as e:
-                print(traceback.format_exc())
-        
-        start_time = getattr(item, 'start_time', time.time())
-        duration = time.time() - start_time
-        
-        # Get test related information
-        test_name = item.name
+            # handle the failed test case to reset the app
+            driver = None
+            for fixture_name in item.fixturenames:
+                if fixture_name == 'driver':
+                    driver = item.funcargs.get('driver')
+                    break
+            handle_failed_test_reset(item, driver)
+
+
+        # collect feature, scenario, result
         feature = item.module.__name__
-        scenario = item.function.__doc__ or test_name
-        
+        if hasattr(item, 'function') and hasattr(item.function, '__scenario__'):
+            scenario = item.function.__scenario__.name
+        else:
+            scenario = item.name
+        status = "PASS" if report.passed else "FAIL"
+        test_summary.append((feature, scenario, status))
+
+        # add a separator after the test result
+        print(f"\n{'-' * 50}")
+
         # Get tags
         tags = []
         if hasattr(item, 'function') and hasattr(item.function, '__scenario__'):
@@ -226,27 +232,31 @@ def pytest_runtest_makereport(item, call):
                         tags.append(tag)
                     elif hasattr(tag, 'name'):
                         tags.append(tag.name)
-        
+
     if report.when == "call" and report.failed:
         driver = item.funcargs.get("driver")
         if driver:
             screenshots_dir = "screenshots"
             os.makedirs(screenshots_dir, exist_ok=True)
-            
+
             if hasattr(item, 'function') and hasattr(item.function, '__scenario__'):
                 scenario_obj = item.function.__scenario__
                 scenario_name = getattr(scenario_obj, 'name', item.name)
             else:
                 scenario_name = item.name
 
+            # save screenshot
+            time.sleep(2)
             safe_name = re.sub(r'[^a-zA-Z0-9_\\-]', '_', scenario_name)
             screenshot_path = os.path.join(screenshots_dir, f"{safe_name}_{datetime.now().strftime('%Y%m%d')}.png")
             driver.save_screenshot(screenshot_path)
+
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_setup(item):
     item.start_time = time.time()
     yield
+
 
 def pytest_bdd_before_step(request, feature, scenario, step, step_func):
     """Record step information before each step"""
@@ -254,7 +264,7 @@ def pytest_bdd_before_step(request, feature, scenario, step, step_func):
     step_text = step.name
     # Get step type (given/when/then)
     step_type = step.type
-    
+
     # Define color codes
     colors = {
         'given': '\033[94m',  # Blue
@@ -264,7 +274,7 @@ def pytest_bdd_before_step(request, feature, scenario, step, step_func):
         'scenario': '\033[95m',  # Purple
         'tag': '\033[90m'     # Gray
     }
-    
+
     # If it's the first step, print feature and scenario information
     if not hasattr(request.node, 'feature_printed'):
         # Get feature file name
@@ -272,7 +282,7 @@ def pytest_bdd_before_step(request, feature, scenario, step, step_func):
         print(f"\n{'-' * 50}")
         print(f"{colors['scenario']}Feature: {feature_file}")
         print(f"Scenario: {scenario.name}{colors['reset']}")
-        
+
         # Get and display tags
         if hasattr(scenario, 'tags'):
             tags = [tag for tag in scenario.tags if isinstance(tag, str)]
@@ -281,9 +291,25 @@ def pytest_bdd_before_step(request, feature, scenario, step, step_func):
         
         print()  # Empty line
         setattr(request.node, 'feature_printed', True)
-    
+
     # Select color based on step type
     color = colors.get(step_type.lower(), colors['reset'])
-    
+
     # Print step information with color
     print(f"{color}{step_type.upper()} {step_text}{colors['reset']}")
+
+def pytest_warning_recorded(warning_message, when, nodeid, location):
+    """ Handle pytestUnknownMarkWarning"""
+    if "Unknown pytest.mark" in str(warning_message):
+        return None
+    return warning_message
+
+def session_finished(session, exitstatus):
+    print("\nTest Summary:")
+    for feature, scenario, status in test_summary:
+        print(f"{feature} - {scenario}")
+        if status == "PASS":
+            print(f"\033[92m{status}\033[0m")  # green
+        else:
+            print(f"\033[91m{status}\033[0m")  # red
+        print()

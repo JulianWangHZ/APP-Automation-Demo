@@ -113,10 +113,8 @@ pip install -r requirements.txt
 # .env
 APPIUM_OS="ios"
 IMPLICIT_WAIT=15
-FULL_RESET="True"
+NO_RESET="True"
 AUTO_ACCEPT_ALERTS="True"
-TEST_EMAIL= "qatest@gmail.com"
-VERIFICATION_CODE= "123456"
 IOS_APP_PATH="/path/to/your/Beta.app"
 #UDID="4BEC1422-4429-4EAD-B850-C296B013A210" #Optional
 ```

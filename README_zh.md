@@ -39,7 +39,7 @@
   - [必要軟體](#必要軟體)
   - [套件安裝](#套件安裝)
   - [Appium 設定](#appium-設定)
-  - [WebDriverAgent 設定 (僅 iOS)](#3-webdriveragent-設定-僅-ios)
+  - [WebDriverAgent 設定 (僅 iOS)](#webdriveragent-設定-僅-ios)
   - [執行測試](#執行測試)
     - [啟動 Appium 伺服器](#啟動-appium-伺服器)
     - [基本測試執行](#基本測試執行)
@@ -112,10 +112,8 @@ pip install -r requirements.txt
 # .env
 APPIUM_OS="ios"
 IMPLICIT_WAIT=15
-FULL_RESET="True"
+NO_RESET="True"
 AUTO_ACCEPT_ALERTS="True"
-TEST_EMAIL= "qatest@gmail.com"
-VERIFICATION_CODE= "123456"
 IOS_APP_PATH="/path/to/your/Beta.app"
 #UDID="4BEC1422-4429-4EAD-B850-C296B013A210" #可選
 ```

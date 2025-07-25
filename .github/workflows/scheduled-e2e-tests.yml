@@ -1,4 +1,4 @@
-name: BrowserStack - Scheduled iOS/padOS E2E Tests
+name: BrowserStack - Scheduled iOS E2E Tests
 
 on:
   schedule:
@@ -53,11 +53,9 @@ jobs:
           BROWSERSTACK_SESSION_NAME=Scheduled iOS E2E Tests
           BROWSERSTACK_HUB_URL=https://hub-cloud.browserstack.com/wd/hub
           DEVICE_COUNT=1
-          FULL_RESET=True
+          NO_RESET=False
           AUTO_ACCEPT_ALERTS=True
           IMPLICIT_WAIT=25
-          TEST_EMAIL= "qatest@hunger.ai"
-          VERIFICATION_CODE= "555666"
           PLATFORM_NAME=iOS
           AUTOMATION_NAME=XCUITest
           EOF
@@ -79,10 +77,10 @@ jobs:
             sed -i "s/BROWSERSTACK_SESSION_NAME=.*/BROWSERSTACK_SESSION_NAME=Scheduled iOS E2E $title/" .env
           }
 
-          # run login tests
-          echo "Running login tests..."
-          set_session_name "login"
-          python -m pytest -v -k "login" --alluredir=allure-results
+          # run onboarding tests
+          echo "Running onboarding tests..."
+          set_session_name "onboarding"
+          python -m pytest -v -s -k "onboarding" --alluredir=allure-results
 
       - name: Copy test results to reports directory
         run: |
@@ -170,7 +168,7 @@ jobs:
       - name: Test Results Summary
         if: always()
         run: |
-          echo "=== IOS SCHEDULED E2E Test Results Summary ==="
+          echo "=== iOS SCHEDULED E2E Test Results Summary ==="
           echo "Platform: iOS"
           echo "Device: iPhone 15 Pro"
           echo "OS Version: 17.5"
@@ -195,7 +193,7 @@ jobs:
       - name: Test Insights
         if: always()
         run: |
-          echo "=== IOS SCHEDULED E2E Test Insights ==="
+          echo "=== iOS SCHEDULED E2E Test Insights ==="
 
           if [ -f "reports/allure/reports/ios/${{ env.REPORT_DATE }}/widgets/summary.json" ]; then
             # Get test statistics
@@ -231,7 +229,7 @@ jobs:
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "🚨 SCHEDULED TEST FAILURE - IOS"
+          echo "🚨 SCHEDULED TEST FAILURE - iOS"
           echo "Platform: iOS"
           echo "Device: iPhone 15 Pro"
           echo "Build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -239,241 +237,6 @@ jobs:
 
           if [ -f "reports/allure/reports/ios/${{ env.REPORT_DATE }}/widgets/summary.json" ]; then
             failed=$(cat reports/allure/reports/ios/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.statistic.failed')
-            echo "Failed tests: $failed"
-          fi
-
-          echo "Check Allure report for details"
-
-  run-pados-tests:
-    runs-on: ubuntu-latest
-    needs: run-ios-tests # run ios tests first
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Install Allure CLI
-        run: npm install -g allure-commandline --save-dev
-
-      - name: Create reports directory
-        run: |
-          mkdir -p reports/{allure/{results,reports},html,coverage,logs}
-          mkdir -p allure-results
-          mkdir -p allure-report
-          mkdir -p screenshots
-          echo "Reports directory structure created"
-
-      - name: Set up environment variables for padOS
-        run: |
-          cat > .env << EOF
-          TEST_ENV=github_actions
-          IS_CI=true
-          RUN_TYPE=${{ env.RUN_TYPE }}
-          APPIUM_OS=padOS
-          BROWSERSTACK_USERNAME=${{ secrets.BROWSERSTACK_USERNAME }}
-          BROWSERSTACK_ACCESS_KEY=${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          BROWSERSTACK_IOS_APP_ID=${{ secrets.BROWSERSTACK_IOS_APP_ID }}
-          BROWSERSTACK_DEVICE_NAME=iPad Pro (12.9-inch) (6th generation)
-          BROWSERSTACK_OS_VERSION=17.5
-          BROWSERSTACK_PROJECT_NAME=App E2E Tests
-          BROWSERSTACK_BUILD_NAME=GitHub Actions Scheduled Build
-          BROWSERSTACK_SESSION_NAME=Scheduled padOS E2E Tests
-          BROWSERSTACK_HUB_URL=https://hub-cloud.browserstack.com/wd/hub
-          DEVICE_COUNT=1
-          FULL_RESET=True
-          AUTO_ACCEPT_ALERTS=True
-          IMPLICIT_WAIT=25
-          TEST_EMAIL= "qatest@hunger.ai"
-          VERIFICATION_CODE= "555666"
-          PLATFORM_NAME=padOS
-          AUTOMATION_NAME=XCUITest
-          EOF
-
-      - name: Run padOS scheduled tests
-        run: |
-          echo "Running scheduled padOS E2E tests..."
-
-          # install and start BrowserStack local
-          curl -L https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip -o BrowserStackLocal.zip
-          unzip BrowserStackLocal.zip
-          ./BrowserStackLocal --key ${{ secrets.BROWSERSTACK_ACCESS_KEY }} --daemon start
-
-          # set session name function
-          set_session_name() {
-            local tag=$1
-            # convert tag to title format (e.g. login -> Login)
-            local title=$(echo $tag | sed 's/_/ /g' | sed 's/\b\(.\)/\u\1/g')
-            sed -i "s/BROWSERSTACK_SESSION_NAME=.*/BROWSERSTACK_SESSION_NAME=Scheduled padOS E2E $title/" .env
-          }
-
-          # run login tests
-          echo "Running login tests..."
-          set_session_name "login"
-          python -m pytest -v -k "login" --alluredir=allure-results
-
-      - name: Copy test results to reports directory
-        run: |
-          cp -r allure-results/* reports/allure/results/ || true
-          echo "Test results copied to reports directory"
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-pados-scheduled-${{ github.run_id }}
-          path: reports/allure/results
-          retention-days: 30
-
-      - name: Set report date env
-        run: |
-          # Set timezone to Asia/Taipei
-          export TZ='Asia/Taipei'
-          echo "REPORT_DATE=$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
-
-      - name: Create reports directory structure
-        run: |
-          mkdir -p reports/allure/reports/pados
-          echo "Reports directory structure created"
-
-      - name: Clean old Allure reports (keep 60 days)
-        run: |
-          REPORTS_DIR=reports/allure/reports/pados
-          find $REPORTS_DIR -maxdepth 1 -type d -name '20*' -mtime +60 -exec rm -rf {} + 2>/dev/null || true
-
-      - name: Generate Allure Report
-        uses: simple-elf/allure-report-action@master
-        with:
-          allure_results: reports/allure/results
-          allure_report: reports/allure/reports/pados/${{ env.REPORT_DATE }}
-          keep_reports: 20
-
-      - name: Generate Allure Index Page
-        run: |
-          REPORTS_DIR=reports/allure/reports/pados
-          sudo chmod -R 777 $REPORTS_DIR
-          INDEX_FILE=$REPORTS_DIR/index.html
-          echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>padOS Allure Reports Index</title></head><body><h1>padOS Allure Reports</h1><ul>' > $INDEX_FILE
-          for d in $REPORTS_DIR/*/ ; do
-            dname=$(basename "$d")
-            if [ "$dname" != "latest" ]; then
-              echo "<li><a href=\"./$dname/\">$dname</a></li>" >> $INDEX_FILE
-            fi
-          done
-          echo '</ul></body></html>' >> $INDEX_FILE
-
-      - name: Deploy to Netlify (date version)
-        uses: nwtgck/actions-netlify@v2
-        with:
-          publish-dir: reports/allure/reports/pados/${{ env.REPORT_DATE }}
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy Allure report ${{ env.REPORT_DATE }} for padOS Scheduled Tests"
-          enable-pull-request-comment: true
-          enable-commit-comment: true
-          overwrites-pull-request-comment: true
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-
-      - name: Deploy Allure Index to Netlify Root
-        uses: nwtgck/actions-netlify@v2
-        with:
-          publish-dir: reports/allure/reports/pados
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy padOS Allure index page"
-          enable-pull-request-comment: false
-          enable-commit-comment: false
-          overwrites-pull-request-comment: false
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-
-      - name: Debug allure-report content
-        run: ls -l reports/allure/reports/pados
-
-      - name: Check Allure CLI version
-        run: allure --version
-
-      - name: Test Results Summary
-        if: always()
-        run: |
-          echo "=== PADOS SCHEDULED E2E Test Results Summary ==="
-          echo "Platform: padOS"
-          echo "Device: iPad Pro (12.9-inch) (6th generation)"
-          echo "OS Version: 17.5"
-          echo "Device Count: 1"
-          echo "Test Type: Scheduled Tests"
-          echo "Build URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          if [ -f "reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json" ]; then
-            echo ""
-            echo "=== Test Statistics ==="
-            cat reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.statistic | "Total: \(.total), Passed: \(.passed), Failed: \(.failed), Skipped: \(.skipped)"'
-            
-            duration=$(cat reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.time.duration')
-            duration_seconds=$((duration / 1000))
-            minutes=$((duration_seconds / 60))
-            seconds=$((duration_seconds % 60))
-            echo "Execution Time: ${minutes} minutes ${seconds} seconds"
-          else
-            echo "No test results found"
-          fi
-
-      - name: Test Insights
-        if: always()
-        run: |
-          echo "=== PADOS SCHEDULED E2E Test Insights ==="
-
-          if [ -f "reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json" ]; then
-            # Get test statistics
-            total=$(cat reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.statistic.total')
-            passed=$(cat reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.statistic.passed')
-            failed=$(cat reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.statistic.failed')
-            skipped=$(cat reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.statistic.skipped')
-            
-            # Calculate success rate
-            if [ "$total" -gt 0 ]; then
-              success_rate=$((passed * 100 / total))
-              echo "Success Rate: ${success_rate}%"
-            fi
-            
-            # Test execution insights
-            echo ""
-            echo "=== Execution Insights ==="
-            if [ "$failed" -eq 0 ]; then
-              echo "✅ All scheduled padOS tests passed successfully!"
-            elif [ "$failed" -gt 0 ]; then
-              echo "❌ $failed test(s) failed"
-              echo "⚠️  $skipped test(s) skipped"
-            fi
-            
-            if [ "$skipped" -gt 0 ]; then
-              echo "📋 $skipped test(s) were skipped - consider reviewing test conditions"
-            fi
-
-          else
-            echo "No test results available for insights"
-          fi
-
-      - name: Notify on Failure
-        if: failure()
-        run: |
-          echo "🚨 SCHEDULED TEST FAILURE - PADOS"
-          echo "Platform: padOS"
-          echo "Device: iPad Pro (12.9-inch) (6th generation)"
-          echo "Build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "Triggered by: Scheduled Workflow"
-
-          if [ -f "reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json" ]; then
-            failed=$(cat reports/allure/reports/pados/${{ env.REPORT_DATE }}/widgets/summary.json | jq -r '.statistic.failed')
             echo "Failed tests: $failed"
           fi
 

@@ -3,7 +3,7 @@
 import os
 
 
-def setup_flow(driver, email, ver_code):
+def setup_flow():
     print("Running onboarding flow...")
 
     # --- STEP 1: 

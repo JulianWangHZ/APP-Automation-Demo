@@ -1,0 +1,7 @@
+{
+  "python.analysis.autoImportCompletions": true,
+  "editor.formatOnSave": false,
+  "editor.formatOnType": false,
+  "editor.formatOnPaste": false,
+  "python.formatting.provider": "none"
+}
