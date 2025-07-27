@@ -40,7 +40,7 @@ if is_ci:
     options.deviceName = config.get(
         'BROWSERSTACK_DEVICE_NAME', 'iPhone 16 Pro')
     options.os_version = config.get('BROWSERSTACK_OS_VERSION', '18.2')
-    options.app = config.get('BROWSERSTACK_APP_ID')
+    options.app = config.get('BROWSERSTACK_IOS_APP_ID')
     options.set_capability('autoAcceptAlerts', True)
     options.set_capability('autoGrantPermissions', True)
     options.set_capability('bstack:options', browserstack_options)
