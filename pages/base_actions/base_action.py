@@ -239,6 +239,62 @@ class BaseActions:
                 continue
 
         return False
+    
+    def simple_scroll_to_element(self, locator_type: str, locator_value: str, max_swipes: int = 3) -> bool:
+        """
+        Simple scroll to find element method, using fixed screen ratio for scrolling
+
+        Args:
+            locator_type: Locator type
+            locator_value: Locator value
+            max_swipes: Maximum number of swipes, default is 3
+
+        Returns:
+            bool: If the element is found, return True, otherwise return False
+        """
+        self.driver.implicitly_wait(0)
+
+        # Check if the element is already visible
+        try:
+            element = self.driver.find_element(locator_type, locator_value)
+            if element.is_displayed():
+                return True
+        except (NoSuchElementException, StaleElementReferenceException):
+            pass
+
+        # Get screen size
+        screen_width, screen_height = self.get_screen_size()
+
+        # Fixed swipe parameters
+        start_x = screen_width // 2
+        start_y = int(screen_height * 0.8)
+        end_y = int(screen_height * 0.2)
+
+        for i in range(max_swipes):
+            try:
+                print(f"Executing swipe {i + 1} times")
+
+                # Execute swipe
+                self.driver.swipe(start_x, start_y, start_x, end_y, 1000)
+                time.sleep(1) 
+
+                # Check if the element is visible
+                try:
+                    element = self.driver.find_element(
+                        locator_type, locator_value)
+                    if element.is_displayed():
+                        print("Found the target element!")
+                        return True
+                except (NoSuchElementException, StaleElementReferenceException):
+                    pass
+
+            except Exception as e:
+                print(f"Error during swipe: {str(e)}")
+                continue
+
+        print(f"Simple swipe {max_swipes} times but still not found the target element")
+        return False
+
 
     def swipe(self, start_x: int, start_y: int, end_x: int, end_y: int, duration: int = 800):
         """
@@ -552,3 +608,20 @@ class BaseActions:
         """
         elements = self.driver.find_elements(locator_type, locator_value)
         return len(elements)
+    
+    def wait_for_elements_visible(self, locator_type: str, locator_value: str, timeout: int = 30, min_count: int = 1):
+        '''wait for multiple elements to be visible'''
+        try:
+            self.driver.implicitly_wait(0)
+            wait = WebDriverWait(self.driver, timeout)
+
+            def elements_visible(driver):
+                elements = driver.find_elements(locator_type, locator_value)
+                visible_elements = [
+                    elem for elem in elements if elem.is_displayed()]
+                return visible_elements if len(visible_elements) >= min_count else None
+
+            return wait.until(elements_visible)
+        except TimeoutException:
+            raise TimeoutException(
+                f"Expected at least {min_count} elements ({locator_type}={locator_value}) not visible after {timeout} seconds")
