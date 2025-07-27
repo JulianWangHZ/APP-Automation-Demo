@@ -529,21 +529,6 @@ class BaseActions:
         - If the current state is different from the expected state, switch it
         - If the current state is the same as the expected state, keep it unchanged
 
-        Example:
-        # Switch to ON state
-        common_actions.toggle_switch_state(By.ID, "my_toggle", should_be_on=True)
-        # Output:
-        # Toggle Current State: Off
-        # Toggle New State: On
-        # Toggle switched to On state successfully
-
-        # Switch to OFF state
-        common_actions.toggle_switch_state(By.ID, "my_toggle", should_be_on=False)
-        # Output:
-        # Toggle Current State: On
-        # Toggle New State: Off
-        # Toggle switched to Off state successfully
-
         Args:
             locator_type: Locator type
             locator_value: Locator value
@@ -554,53 +539,67 @@ class BaseActions:
         """
         try:
             current_state = self.is_toggle_on(locator_type, locator_value)
-            print(f"Toggle Current State:{'On' if current_state else 'Off'}")
+            print(f"Toggle Current State: {self._get_toggle_state_text(current_state)}")
             
-            # If the current state is different from the expected state, switch it
-            if current_state != should_be_on:
-                print(f"Switching toggle to {'On' if should_be_on else 'Off'} state")
-                
-                max_attempts = 3
-                for attempt in range(max_attempts):
-                    try:
-                        element = self.wait.until(
-                            EC.element_to_be_clickable((locator_type, locator_value))
-                        )
-                        element.click()
-                        time.sleep(1) 
-                        
-                        new_state = self.is_toggle_on(locator_type, locator_value)
-                        print(f"Toggle New State (Attempt {attempt + 1}):{'On' if new_state else 'Off'}")
-                        
-                        if new_state == should_be_on:
-                            print(f"Toggle switched to {'On' if should_be_on else 'Off'} state successfully")
-                            return True
-                            
-                        if attempt < max_attempts - 1:
-                            print(f"Attempt {attempt + 1} failed, trying again...")
-                            time.sleep(1)  # Wait for a moment and try again
-                            
-                    except Exception as e:
-                        print(f"Error during attempt {attempt + 1}: {str(e)}")
-                        if attempt < max_attempts - 1:
-                            time.sleep(1)
-                            continue
-                
-                print(f"Warning: Failed to switch toggle to {'On' if should_be_on else 'Off'} state after {max_attempts} attempts")
-                return False
-            else:
-                print(f"Toggle is already {'On' if should_be_on else 'Off'}, no need to switch")
+            if current_state == should_be_on:
+                print(f"Toggle is already {self._get_toggle_state_text(should_be_on)}, no need to switch")
                 return True
             
-        except NoSuchElementException:
-            print(f"Error: Toggle element not found ({locator_type}={locator_value})")
-            return False
-        except TimeoutException:
-            print(f"Error: Waiting for Toggle element timeout ({locator_type}={locator_value})")
-            return False
+            return self._perform_toggle_switch(locator_type, locator_value, should_be_on)
+            
+        except (NoSuchElementException, TimeoutException) as e:
+            return self._handle_toggle_error(e, locator_type, locator_value)
         except Exception as e:
             print(f"Error: Unknown error occurred while switching toggle state: {str(e)}")
             return False
+
+    def _get_toggle_state_text(self, state: bool) -> str:
+        """Get readable text for toggle state"""
+        return 'On' if state else 'Off'
+
+    def _perform_toggle_switch(self, locator_type: str, locator_value: str, should_be_on: bool) -> bool:
+        """Perform the actual toggle switch with retry logic"""
+        print(f"Switching toggle to {self._get_toggle_state_text(should_be_on)} state")
+        
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            if self._attempt_single_toggle_click(locator_type, locator_value, should_be_on, attempt + 1):
+                return True
+            
+            if attempt < max_attempts - 1:
+                print(f"Attempt {attempt + 1} failed, trying again...")
+                time.sleep(1)
+        
+        print(f"Warning: Failed to switch toggle to {self._get_toggle_state_text(should_be_on)} state after {max_attempts} attempts")
+        return False
+
+    def _attempt_single_toggle_click(self, locator_type: str, locator_value: str, should_be_on: bool, attempt_num: int) -> bool:
+        """Attempt a single toggle click and verify the result"""
+        try:
+            element = self.wait.until(EC.element_to_be_clickable((locator_type, locator_value)))
+            element.click()
+            time.sleep(1)
+            
+            new_state = self.is_toggle_on(locator_type, locator_value)
+            print(f"Toggle New State (Attempt {attempt_num}): {self._get_toggle_state_text(new_state)}")
+            
+            if new_state == should_be_on:
+                print(f"Toggle switched to {self._get_toggle_state_text(should_be_on)} state successfully")
+                return True
+                
+            return False
+            
+        except Exception as e:
+            print(f"Error during attempt {attempt_num}: {str(e)}")
+            return False
+
+    def _handle_toggle_error(self, error: Exception, locator_type: str, locator_value: str) -> bool:
+        """Handle toggle-related errors with appropriate error messages"""
+        if isinstance(error, NoSuchElementException):
+            print(f"Error: Toggle element not found ({locator_type}={locator_value})")
+        elif isinstance(error, TimeoutException):
+            print(f"Error: Waiting for Toggle element timeout ({locator_type}={locator_value})")
+        return False
 
     def get_element_count(self, locator_type: str, locator_value: str) -> int:
         """

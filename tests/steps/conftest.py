@@ -4,6 +4,8 @@ import subprocess
 import time
 import re
 import traceback
+import allure
+import sys
 from dotenv import load_dotenv
 
 # load .env file
@@ -17,7 +19,6 @@ from utils.logger import logger
 from pages.base_actions.base_action import BaseActions
 from utils.initial_setup import setup_flow
 from utils.permission_handler import handle_permission_dialogs
-from screenshot_hooks import pytest_runtest_makereport
 
 
 test_summary = []
@@ -70,7 +71,7 @@ def handle_failed_test_reset(item, driver):
                     
                     # Re-execute setup_flow for onboarding
                     try:
-                        setup_flow()
+                        setup_flow(driver)
                         print("Re-login successfully")
                     except Exception as setup_error:
                         print(f"Re-login failed: {setup_error}")
@@ -140,7 +141,7 @@ def driver(request):
     else:
         print("Executing onboarding process...")
         try:
-            setup_flow()
+            setup_flow(driver)
             print("Initialization process completed")
         except Exception as e:
             print(f"Onboarding process failed: {e}")
@@ -158,6 +159,26 @@ def pytest_configure(config):
         logger.info("Configuring test collection for iOS platform")
         config.args = ['tests/steps/ios']
 
+    if not is_running_in_ci():
+        screenshots_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "screenshots")
+        if not os.path.exists(screenshots_dir):
+            os.makedirs(screenshots_dir)
+            print(f"Created screenshots directory at {screenshots_dir}")
+    
+    # Set up logging
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    log_file = os.path.join(log_dir, "test_execution.log")
+    
+    # Ensure log directory and file exist
+    if not os.path.exists(log_file):
+        with open(log_file, 'w') as f:
+            f.write('')
+    
+    print(f"Logging configured. Log file: {log_file}")
+
 
 def pytest_bdd_apply_tag(tag, function):
     if tag == 'order':
@@ -174,7 +195,7 @@ def pytest_collection_modifyitems(items):
     filtered_items = []
     for item in items:
         file_path = str(item.fspath)
-        if '/ios/' in file_path:
+        if '/ios/' in file_path.lower():
             filtered_items.append(item)
 
     items[:] = filtered_items
@@ -186,8 +207,9 @@ def base_actions(driver):
     return BaseActions(driver)
 
 
-@pytest.hookimpl(hookwrapper=True)
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
+
     outcome = yield
     report = outcome.get_result()
 
@@ -207,7 +229,6 @@ def pytest_runtest_makereport(item, call):
                     driver = item.funcargs.get('driver')
                     break
             handle_failed_test_reset(item, driver)
-
 
         # collect feature, scenario, result
         feature = item.module.__name__
@@ -233,23 +254,97 @@ def pytest_runtest_makereport(item, call):
                     elif hasattr(tag, 'name'):
                         tags.append(tag.name)
 
+    # Enhanced screenshot functionality
     if report.when == "call" and report.failed:
-        driver = item.funcargs.get("driver")
-        if driver:
-            screenshots_dir = "screenshots"
-            os.makedirs(screenshots_dir, exist_ok=True)
+        try:
+            print(f"Test {item.name} failed - attempting to take screenshot")
+            logger.info(f"Test {item.name} failed - attempting to take screenshot")
 
-            if hasattr(item, 'function') and hasattr(item.function, '__scenario__'):
-                scenario_obj = item.function.__scenario__
-                scenario_name = getattr(scenario_obj, 'name', item.name)
+            # Get driver instance from request
+            request = item._request
+            if not request:
+                error_msg = f"Test {item.name} failed - request object not found"
+                print(error_msg)
+                logger.error(error_msg)
+                return
+
+            driver = request.getfixturevalue("driver")
+            if not driver:
+                error_msg = f"Test {item.name} failed - driver instance not found"
+                print(error_msg)
+                logger.error(error_msg)
+                return
+
+            if not hasattr(driver, 'save_screenshot'):
+                error_msg = f"driver instance does not support screenshot functionality"
+                print(error_msg)
+                logger.error(error_msg)
+                return
+
+            # Extract relevant part of the test name
+            test_name = item.name
+            if test_name.startswith('test_'):
+                test_name = test_name[5:]  # Remove "test_" prefix
+
+            if is_running_in_ci():
+                # In CI environment, save screenshot to artifacts directory
+                artifacts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "artifacts")
+                os.makedirs(artifacts_dir, exist_ok=True)
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+                screenshot_name = f"{test_name}_{timestamp}.png"
+                screenshot_path = os.path.join(artifacts_dir, screenshot_name)
+
+                # Save screenshot
+                driver.save_screenshot(screenshot_path)
+                success_msg = f"Screenshot saved to artifacts: {screenshot_path}"
+
+                # Also attach to Allure
+                with open(screenshot_path, 'rb') as f:
+                    allure.attach(
+                        f.read(),
+                        name=f"{test_name}",
+                        attachment_type=allure.attachment_type.PNG
+                    )
             else:
-                scenario_name = item.name
+                # In local environment, save to screenshots directory
+                screenshots_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "screenshots")
+                os.makedirs(screenshots_dir, exist_ok=True)
 
-            # save screenshot
-            time.sleep(2)
-            safe_name = re.sub(r'[^a-zA-Z0-9_\\-]', '_', scenario_name)
-            screenshot_path = os.path.join(screenshots_dir, f"{safe_name}_{datetime.now().strftime('%Y%m%d')}.png")
-            driver.save_screenshot(screenshot_path)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+                screenshot_name = f"{test_name}_{timestamp}.png"
+                screenshot_path = os.path.join(screenshots_dir, screenshot_name)
+
+                # Save screenshot
+                driver.save_screenshot(screenshot_path)
+                success_msg = f"Screenshot saved: {screenshot_path}"
+
+                # Also attach to Allure for local runs
+                with open(screenshot_path, 'rb') as f:
+                    allure.attach(
+                        f.read(),
+                        name=f"{test_name}",
+                        attachment_type=allure.attachment_type.PNG
+                    )
+
+            print(success_msg)
+            logger.info(success_msg)
+
+            # Add failure information to log
+            if hasattr(report, 'longrepr'):
+                # get the first line of the error message
+                error_str = str(report.longrepr)
+                # get the full error message
+                test_failure = f"FAILED {item.nodeid} - {error_str.split('E       ')[1].strip()}"
+                error_msg = f"Test failure: {test_failure}"
+                print(error_msg)
+                logger.error(error_msg)
+
+        except Exception as e:
+            # only keep the first line of the error message
+            error_msg = f"Screenshot process error: {str(e)}"
+            print(error_msg)
+            logger.error(error_msg)
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -313,3 +408,6 @@ def session_finished(session, exitstatus):
         else:
             print(f"\033[91m{status}\033[0m")  # red
         print()
+
+def is_running_in_ci():
+    return os.getenv('CI') == 'true'
