@@ -81,7 +81,7 @@ jobs:
           NO_RESET=False
           AUTO_ACCEPT_ALERTS=True
           IMPLICIT_WAIT=25
-          PLATFORM_NAME=${{ github.event.inputs.platform | upper }}
+          PLATFORM_NAME=${{ github.event.inputs.platform }}
           AUTOMATION_NAME=XCUITest
           EOF
 
@@ -143,7 +143,7 @@ jobs:
           REPORTS_DIR=reports/allure/reports/${{ github.event.inputs.platform }}
           sudo chmod -R 777 $REPORTS_DIR
           INDEX_FILE=$REPORTS_DIR/index.html
-          echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>${{ github.event.inputs.platform | upper }} Allure Reports Index</title></head><body><h1>${{ github.event.inputs.platform | upper }} Allure Reports</h1><ul>' > $INDEX_FILE
+          echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>${{ github.event.inputs.platform }} Allure Reports Index</title></head><body><h1>${{ github.event.inputs.platform }} Allure Reports</h1><ul>' > $INDEX_FILE
           for d in $REPORTS_DIR/*/ ; do
             dname=$(basename "$d")
             if [ "$dname" != "latest" ]; then
@@ -172,7 +172,7 @@ jobs:
           publish-dir: reports/allure/reports/${{ github.event.inputs.platform }}
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy ${{ github.event.inputs.platform | upper }} Allure index page"
+          deploy-message: "Deploy ${{ github.event.inputs.platform }} Allure index page"
           enable-pull-request-comment: false
           enable-commit-comment: false
           overwrites-pull-request-comment: false
@@ -261,8 +261,8 @@ jobs:
       - name: Test Results Summary
         if: always()
         run: |
-          echo "=== ${{ github.event.inputs.platform | upper }} E2E Test Results Summary ==="
-          echo "Platform: ${{ github.event.inputs.platform | upper }}"
+          echo "=== ${{ github.event.inputs.platform }} E2E Test Results Summary ==="
+          echo "Platform: ${{ github.event.inputs.platform }}"
           echo "Device: ${{ github.event.inputs.device_name }}"
           echo "OS Version: 17.5"
           echo "Device Count: 1"
@@ -286,7 +286,7 @@ jobs:
       - name: Test Insights
         if: always()
         run: |
-          echo "=== ${{ github.event.inputs.platform | upper }} E2E Test Insights ==="
+          echo "=== ${{ github.event.inputs.platform }} E2E Test Insights ==="
 
           if [ -f "reports/allure/reports/${{ github.event.inputs.platform }}/${{ env.REPORT_DATE }}/widgets/summary.json" ]; then
             # Get test statistics
@@ -322,8 +322,8 @@ jobs:
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "🚨 TEST FAILURE - ${{ github.event.inputs.platform | upper }}"
-          echo "Platform: ${{ github.event.inputs.platform | upper }}"
+          echo "🚨 TEST FAILURE - ${{ github.event.inputs.platform }}"
+          echo "Platform: ${{ github.event.inputs.platform }}"
           echo "Device: ${{ github.event.inputs.device_name }}"
           echo "Build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           echo "Triggered by: ${{ github.actor }}"
