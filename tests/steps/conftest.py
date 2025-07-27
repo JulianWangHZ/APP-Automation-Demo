@@ -108,7 +108,7 @@ def driver(request):
         previous_test_failed = request.session.previous_test_failed
 
     # --- App cleanup process ---
-    if not skip_setup:  # Only reinstall if skipsetup is not enabled
+    if not skip_setup and not is_running_in_ci():  # Only reinstall if skipsetup is not enabled and not in CI
         try:
             print("Cleaning iOS application...")
             app_path = os.getenv('IOS_APP_PATH')
@@ -121,6 +121,8 @@ def driver(request):
                 print("Please set IOS_APP_PATH in your .env")
         except Exception as e:
             print(f"App cleanup failed: {e}")
+    elif is_running_in_ci():
+        print("Skipping app reinstallation process in CI environment")
     else:
         print("Skipping app reinstallation process due to --skipsetup flag")
 
@@ -410,4 +412,4 @@ def session_finished(session, exitstatus):
         print()
 
 def is_running_in_ci():
-    return os.getenv('CI') == 'true'
+    return os.getenv('CI') == 'true' or os.getenv('IS_CI') == 'true' or os.getenv('TEST_ENV') == 'github_actions'
