@@ -24,8 +24,8 @@ if is_ci:
         'projectName': config.get('BROWSERSTACK_PROJECT_NAME', 'App E2E Tests'),
         'buildName': config.get('BROWSERSTACK_BUILD_NAME', 'GitHub Actions Build'),
         'sessionName': config.get('BROWSERSTACK_SESSION_NAME', 'E2E Test Session'),
-        'deviceName': config.get('BROWSERSTACK_DEVICE_NAME', 'iPhone 15 Pro'),
-        'osVersion': config.get('BROWSERSTACK_OS_VERSION', '17.5'),
+        'deviceName': config.get('BROWSERSTACK_DEVICE_NAME', 'iPhone 16 Pro'),
+        'osVersion': config.get('BROWSERSTACK_OS_VERSION', '18.2'),
         'interactiveDebugging': True,
         'debug': True,
         'networkLogs': True,
@@ -38,8 +38,8 @@ if is_ci:
     options.platform_name = 'iOS'
     options.automation_name = 'XCUITest'
     options.deviceName = config.get(
-        'BROWSERSTACK_DEVICE_NAME', 'iPhone 15 Pro')
-    options.os_version = config.get('BROWSERSTACK_OS_VERSION', '17.5')
+        'BROWSERSTACK_DEVICE_NAME', 'iPhone 16 Pro')
+    options.os_version = config.get('BROWSERSTACK_OS_VERSION', '18.2')
     options.app = config.get('BROWSERSTACK_APP_ID')
     options.set_capability('autoAcceptAlerts', True)
     options.set_capability('autoGrantPermissions', True)
@@ -56,9 +56,26 @@ else:
     options.automation_name = 'XCUITest'
     options.set_capability('language', 'zh')
     options.set_capability('locale', 'TW')
-    options.set_capability('platformVersion', '17.5')
+    options.set_capability('deviceName', 'iPhone 16 Pro')
+    options.set_capability('platformVersion', '18.2')
     options.set_capability('simulatorStartupTimeout', '90000')
-    options.set_capability('app', config.get('IOS_APP_PATH'))
+    #  UDID for local simulator
+    #options.set_capability('udid', 'B2DF8E07-4891-416C-8026-0A702B90AD15')  
+    
+    # iOS app configuration - both app path and bundleId
+    ios_app_path = config.get('IOS_APP_PATH')
+    ios_app_bundle_id = config.get('IOS_APP_BUNDLE_ID', 'com.rafaelsoh.dime')
+    
+    # Set app path (if provided)
+    if ios_app_path:
+        options.set_capability('app', ios_app_path)
+        print(f"Set app path: {ios_app_path}")
+    
+    # Set bundleId (as backup or main identifier)
+    options.set_capability('bundleId', ios_app_bundle_id)
+    print(f"Set bundleId: {ios_app_bundle_id}")
+    
+    
     options.set_capability('noReset', noReset_bool)
     options.set_capability('autoAcceptAlerts', True)
     options.set_capability('autoGrantPermissions', True)

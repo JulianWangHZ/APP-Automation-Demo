@@ -65,7 +65,7 @@
 
 # 📋 目錄
 
-- [🚀 Swift Appium 測試框架](#-swift-appium-測試框架)
+- [🚀 iOS APP 測試框架](#-ios-app-測試框架)
   - [📊 專案概覽](#-專案概覽)
     - [🧪 最新測試報告](#-最新測試報告)
     - [🚀 主要功能](#-主要功能)
@@ -279,9 +279,9 @@ allure serve allure-results
 ```json
 {
   "platformName": "ios",
-  "appium:deviceName": "iPhone 15",
+  "appium:deviceName": "iPhone 16 Pro",
   "appium:automationName": "XCUITest",
-  "appium:platformVersion": "17.2",
+  "appium:platformVersion": "18.2",
   "appium:app": "/path/to/your/ios/AppName.app",
   "appium:noReset": true,
   "appium:autoAcceptAlerts": true

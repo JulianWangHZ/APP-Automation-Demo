@@ -66,7 +66,7 @@ Our test automation framework covers all these features to ensure the highest qu
 
 # 📋 Table of Contents
 
-- [🚀 Swift Appium Testing Framework](#-swift-appium-testing-framework)
+- [🚀 iOS APP Testing Framework](#-ios-app-testing-framework)
   - [📊 Project Overview](#-project-overview)
     - [🧪 Latest Test Reports](#-latest-test-reports)
     - [🚀 Key Features](#-key-features)
@@ -279,9 +279,9 @@ These reports are automatically generated and deployed after each test run, prov
 ```json
 {
   "platformName": "ios",
-  "appium:deviceName": "iPhone 15",
+  "appium:deviceName": "iPhone 16 Pro",
   "appium:automationName": "XCUITest",
-  "appium:platformVersion": "17.2",
+  "appium:platformVersion": "18.2",
   "appium:app": "/path/to/your/ios/AppName.app",
   "appium:noReset": true,
   "appium:autoAcceptAlerts": true
