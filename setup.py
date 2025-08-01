@@ -56,15 +56,19 @@ else:
     options.automation_name = 'XCUITest'
     options.set_capability('language', 'zh')
     options.set_capability('locale', 'TW')
-    options.set_capability('deviceName', 'iPhone 16 Pro')
-    options.set_capability('platformVersion', '18.2')
-    options.set_capability('simulatorStartupTimeout', '90000')
-    #  UDID for local simulator
-    #options.set_capability('udid', 'B2DF8E07-4891-416C-8026-0A702B90AD15')  
+    
+
+    # Real device configuration
+    device_udid = config.get('IOS_UUID') or config.get('IOS_UDID')
+    if device_udid:
+        options.set_capability('udid', device_udid)
+        print(f"Set device UDID: {device_udid}")
+    else:
+        raise ValueError("No UDID found in environment variables. Please set IOS_UDID in .env")
     
     # iOS app configuration - both app path and bundleId
     ios_app_path = config.get('IOS_APP_PATH')
-    ios_app_bundle_id = config.get('IOS_APP_BUNDLE_ID', 'com.rafaelsoh.dime')
+    ios_app_bundle_id = config.get('IOS_APP_BUNDLE_ID')
     
     # Set app path (if provided)
     if ios_app_path:

@@ -45,29 +45,58 @@ def handle_failed_test_reset(item, driver):
                     
                     print(f"Terminate iOS app: {app_id}")
                     driver.terminate_app(app_id)
-                    print("iOS app terminated successfully")
                     
                     print(f"Restart iOS app: {app_id}")
                     driver.activate_app(app_id)
-                    print("iOS app restarted successfully")
                     
                 except Exception as webdriver_error:
                     print(f"BrowserStack app reset failed: {webdriver_error}")
-                    print("Cannot reset app in BrowserStack environment, continuing with next test")
             
             else:
                 # Local environment 
                 app_id = get_app_id()
                 app_path = os.getenv('IOS_APP_PATH')
+                device_udid = os.getenv('IOS_UUID') or os.getenv('IOS_UDID')
                 
-                if app_path:
+                if app_path and device_udid:
+                    print(f"Managing iOS app on real device: {app_id}")
+                    try:
+                        # 1. Uninstall the app
+                        try:
+                            run(['xcrun', 'devicectl', 'device', 'uninstall', 'app', '--device', device_udid, app_id], check=False)
+                            print(f"Uninstall the app: {app_id}")
+                        except Exception as e:
+                            print(f"Uninstall the app failed: {e}")
+                        
+                        # 2. Reinstall the app
+                        try:
+                            run(['xcrun', 'devicectl', 'device', 'install', 'app', '--device', device_udid, app_path], check=False)
+                            print(f"Reinstall the app: {app_path}")
+                        except Exception as e:
+                            print(f"Reinstall the app failed: {e}")
+                        
+                        # 3. Launch the app
+                        try:
+                            run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--device', device_udid, app_id], check=False)
+                            print(f"Launch the app: {app_id}")
+                        except Exception as e:
+                            print(f"Launch the app failed: {e}")
+                        
+                        # Re-execute setup_flow for onboarding
+                        try:
+                            setup_flow(driver)
+                            print("Re-login successfully")
+                        except Exception as setup_error:
+                            print(f"Re-login failed: {setup_error}")
+                    except Exception as device_error:
+                        print(f"Real device app management failed: {device_error}")
+                elif app_path and not device_udid:
+                    # Simulator mode
                     print(f"Uninstall iOS app: {app_id}")
                     run(['xcrun', 'simctl', 'uninstall', 'booted', app_id], check=True)
-                    print("iOS app uninstalled successfully")
                     
                     print(f"Reinstall iOS app: {app_path}")
                     run(['xcrun', 'simctl', 'install', 'booted', app_path], check=True)
-                    print("iOS app reinstalled successfully")
                     
                     # Re-execute setup_flow for onboarding
                     try:
@@ -87,7 +116,7 @@ def handle_failed_test_reset(item, driver):
 
 def get_app_id():
     """Get the app bundle ID from environment variables"""
-    return os.getenv('IOS_APP_BUNDLE_ID', 'com.rafaelsoh.dime')
+    return os.getenv('IOS_APP_BUNDLE_ID')
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -113,8 +142,25 @@ def driver(request):
             print("Cleaning iOS application...")
             app_path = os.getenv('IOS_APP_PATH')
             app_id = get_app_id()
+            device_udid = os.getenv('IOS_UUID') or os.getenv('IOS_UDID')
             
-            if app_path:
+            if app_path and device_udid:
+                print("Real device detected, using devicectl commands")
+                try:
+                    # 1. Uninstall the app
+                    run(['xcrun', 'devicectl', 'device', 'uninstall', 'app', '--device', device_udid, app_id], check=False)
+                    print(f"Uninstall the app: {app_id}")
+                except Exception as e:
+                    print(f"Uninstall the app failed: {e}")
+
+                try:
+                    # 2. Reinstall the app
+                    run(['xcrun', 'devicectl', 'device', 'install', 'app', '--device', device_udid, app_path], check=False)
+                    print(f"Reinstall the app: {app_path}")
+                except Exception as e:
+                    print(f"Reinstall the app failed: {e}")
+            elif app_path and not device_udid:
+                # Simulator mode
                 run(['xcrun', 'simctl', 'uninstall', 'booted', app_id], check=True)
                 run(['xcrun', 'simctl', 'install', 'booted', app_path], check=True)
             else:
